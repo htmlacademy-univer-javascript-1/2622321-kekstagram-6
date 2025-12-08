@@ -1,172 +1,161 @@
 import { isEscapeKey } from './utils.js';
+import { resetScaleAndEffects } from './scale-and-effects.js';
 
 const uploadFormElement = document.querySelector('.img-upload__form');
 const fileInputElement = uploadFormElement.querySelector('.img-upload__input');
 const overlayElement = uploadFormElement.querySelector('.img-upload__overlay');
 const cancelButtonElement = uploadFormElement.querySelector('.img-upload__cancel');
-const scaleValueElement = uploadFormElement.querySelector('.scale__control--value');
-const previewImageElement = uploadFormElement.querySelector('.img-upload__preview img');
-const effectRadiosElements = uploadFormElement.querySelectorAll('.effects__radio');
-const effectLevelContainerElement = uploadFormElement.querySelector('.img-upload__effect-level');
-const effectLevelValueElement = uploadFormElement.querySelector('.effect-level__value');
 const hashtagsInputElement = uploadFormElement.querySelector('.text__hashtags');
 const descriptionInputElement = uploadFormElement.querySelector('.text__description');
-const submitButtonElement = uploadFormElement.querySelector('.img-upload__submit');
+const previewImageElement = uploadFormElement.querySelector('.img-upload__preview img');
+const effectsPreviewElements = document.querySelectorAll('.effects__preview');
 
-const DEFAULT_SCALE = 100;
-const DEFAULT_EFFECT = 'none';
 const MAX_COMMENT_LENGTH = 140;
 const MAX_HASHTAGS = 5;
+const HASHTAG_PATTERN = /^#[a-zа-яё0-9]{1,19}$/i;
 
-let pristineInstance = null;
+let pristine;
 
-const parseTags = (inputValue) => {
-  if (!inputValue) {
+const normalizeHashtags = (value) => {
+  if (!value.trim()) {
     return [];
   }
-  return inputValue
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  return value.trim().split(/\s+/).filter((tag) => tag.length > 0);
 };
 
-const isValidTagFormat = (tag) => {
-  if (tag[0] !== '#') {
-    return false;
-  }
-  if (tag.length === 1) {
-    return false;
-  }
-  if (tag.length > 20) {
-    return false;
-  }
-  return /^[a-zа-яё0-9]+$/i.test(tag.slice(1));
-};
-
-const validateHashtags = (value) => {
-  const tags = parseTags(value);
+const hasValidHashtagFormat = (value) => {
+  const tags = normalizeHashtags(value);
   if (tags.length === 0) {
     return true;
   }
-
-  if (tags.length > MAX_HASHTAGS) {
-    validateHashtags.lastError = 'Нельзя указать больше пяти хэш-тегов.';
-    return false;
-  }
-
-  for (const tag of tags) {
-    if (!isValidTagFormat(tag)) {
-      validateHashtags.lastError = `Неверный формат тега "${tag}". Тег должен начинаться с # и содержать только буквы и цифры, длина до 20 символов.`;
-      return false;
-    }
-  }
-
-  const lowerCaseTags = tags.map((tag) => tag.toLowerCase());
-  const uniqueTags = new Set(lowerCaseTags);
-
-  if (uniqueTags.size !== lowerCaseTags.length) {
-    validateHashtags.lastError = 'Один и тот же хэш-тег не может быть использован дважды.';
-    return false;
-  }
-
-  return true;
+  return tags.every((tag) => HASHTAG_PATTERN.test(tag));
 };
 
-const getHashtagsErrorMessage = () => {
-  return validateHashtags.lastError || 'Неверный формат хэш-тегов.';
+const hasValidHashtagCount = (value) => {
+  const tags = normalizeHashtags(value);
+  return tags.length <= MAX_HASHTAGS;
 };
 
-const validateDescription = (value) => value.length <= MAX_COMMENT_LENGTH;
-
-const setScale = (percent) => {
-  if (scaleValueElement) {
-    scaleValueElement.value = `${percent}%`;
-    previewImageElement.style.transform = `scale(${percent / 100})`;
-  }
+const hasUniqueHashtags = (value) => {
+  const tags = normalizeHashtags(value).map((tag) => tag.toLowerCase());
+  return tags.length === new Set(tags).size;
 };
 
-const setEffect = (effectName) => {
-  effectRadiosElements.forEach((radioElement) => {
-    radioElement.checked = (radioElement.value === effectName);
-  });
+const validateCommentLength = (value) => value.length <= MAX_COMMENT_LENGTH;
 
-  removePreviewFilter();
+const getHashtagFormatErrorMessage = () =>
+  'Хэш-тег должен начинаться с #, содержать только буквы и цифры и быть не длиннее 20 символов';
 
-  if (effectLevelContainerElement) {
-    if (effectName === 'none') {
-      effectLevelContainerElement.classList.add('hidden');
-    } else {
-      effectLevelContainerElement.classList.remove('hidden');
-    }
-  }
+const getHashtagCountErrorMessage = () =>
+  'Нельзя указать больше пяти хэш-тегов';
 
-  if (effectLevelValueElement) {
-    effectLevelValueElement.value = '';
-  }
-};
+const getHashtagUniqueErrorMessage = () =>
+  'Хэш-теги не должны повторяться';
 
-const removePreviewFilter = () => {
-  if (previewImageElement) {
-    previewImageElement.style.filter = '';
-    previewImageElement.style.webkitFilter = '';
-  }
-};
+const getCommentLengthErrorMessage = () =>
+  'Комментарий не может быть длиннее 140 символов';
 
 const initValidation = () => {
-  pristineInstance = new Pristine(uploadFormElement, {
+  pristine = new Pristine(uploadFormElement, {
     classTo: 'img-upload__field-wrapper',
+    errorClass: 'img-upload__field-wrapper--error',
+    successClass: 'img-upload__field-wrapper--success',
     errorTextParent: 'img-upload__field-wrapper',
-    errorTextClass: 'form-error-text',
+    errorTextTag: 'span',
+    errorTextClass: 'img-upload__error'
   });
 
-  pristineInstance.addValidator(
+  pristine.addValidator(
     hashtagsInputElement,
-    validateHashtags,
-    getHashtagsErrorMessage
+    hasValidHashtagFormat,
+    getHashtagFormatErrorMessage,
+    1,
+    true
   );
 
-  pristineInstance.addValidator(
+  pristine.addValidator(
+    hashtagsInputElement,
+    hasValidHashtagCount,
+    getHashtagCountErrorMessage,
+    2,
+    true
+  );
+
+  pristine.addValidator(
+    hashtagsInputElement,
+    hasUniqueHashtags,
+    getHashtagUniqueErrorMessage,
+    3,
+    true
+  );
+
+  pristine.addValidator(
     descriptionInputElement,
-    validateDescription,
-    'Длина комментария не может превышать 140 символов.'
+    validateCommentLength,
+    getCommentLengthErrorMessage
   );
 };
 
-const openUploadForm = () => {
-  overlayElement.classList.remove('hidden');
-  document.body.classList.add('modal-open');
-  setScale(DEFAULT_SCALE);
-  setEffect(DEFAULT_EFFECT);
-  hashtagsInputElement.focus();
-  initValidation();
-};
+const setPreviewImage = (file) => {
+  const reader = new FileReader();
 
-const closeUploadForm = () => {
-  uploadFormElement.reset();
-  fileInputElement.value = '';
-  setScale(DEFAULT_SCALE);
-  setEffect(DEFAULT_EFFECT);
-  removePreviewFilter();
-  overlayElement.classList.add('hidden');
-  document.body.classList.remove('modal-open');
+  reader.onload = (evt) => {
+    const imageUrl = evt.target.result;
 
-  if (pristineInstance) {
-    pristineInstance.reset();
-  }
+    previewImageElement.src = imageUrl;
+
+    effectsPreviewElements.forEach((preview) => {
+      preview.style.backgroundImage = `url(${imageUrl})`;
+    });
+  };
+
+  reader.readAsDataURL(file);
 };
 
 const onDocumentKeydown = (evt) => {
   if (isEscapeKey(evt)) {
-    if (overlayElement.classList.contains('hidden')) {
-      return;
-    }
-
-    const isFocused = document.activeElement === hashtagsInputElement || document.activeElement === descriptionInputElement;
+    const isFocused = document.activeElement === hashtagsInputElement ||
+                      document.activeElement === descriptionInputElement;
 
     if (!isFocused) {
+      evt.preventDefault();
       closeUploadForm();
     }
   }
+};
+
+const closeUploadForm = () => {
+  overlayElement.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+
+  uploadFormElement.reset();
+  fileInputElement.value = '';
+
+  previewImageElement.src = 'img/upload-default-image.jpg';
+  effectsPreviewElements.forEach((preview) => {
+    preview.style.backgroundImage = '';
+  });
+
+  resetScaleAndEffects();
+
+  if (pristine) {
+    pristine.reset();
+  }
+
+  document.removeEventListener('keydown', onDocumentKeydown);
+};
+
+const openUploadForm = (file) => {
+  if (file) {
+    setPreviewImage(file);
+  }
+
+  overlayElement.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  document.addEventListener('keydown', onDocumentKeydown);
+  initValidation();
+
+  hashtagsInputElement.focus();
 };
 
 const onTextFieldKeydown = (evt) => {
@@ -176,57 +165,19 @@ const onTextFieldKeydown = (evt) => {
 };
 
 const onFileInputChange = () => {
-  if (fileInputElement.files && fileInputElement.files.length > 0) {
-    openUploadForm();
+  if (fileInputElement.files.length > 0) {
+    const file = fileInputElement.files[0];
+    openUploadForm(file);
   }
 };
 
-const onCancelButtonClick = (evt) => {
-  evt.preventDefault();
+const onCancelButtonClick = () => {
   closeUploadForm();
 };
 
-const onFormReset = () => {
-  setTimeout(() => {
-    fileInputElement.value = '';
-    setScale(DEFAULT_SCALE);
-    setEffect(DEFAULT_EFFECT);
-    removePreviewFilter();
-    overlayElement.classList.add('hidden');
-    document.body.classList.remove('modal-open');
-
-    if (pristineInstance) {
-      pristineInstance.reset();
-    }
-  }, 0);
-};
-
 const onFormSubmit = (evt) => {
-  if (pristineInstance) {
-    const isValid = pristineInstance.validate();
-    if (!isValid) {
-      evt.preventDefault();
-      const firstErrorElement = uploadFormElement.querySelector('.form-error-text');
-      if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-  }
-
-  submitButtonElement.disabled = true;
-};
-
-const onEffectRadioChange = (evt) => {
-  if (evt.target.value === 'none') {
-    effectLevelContainerElement.classList.add('hidden');
-    removePreviewFilter();
-  } else {
-    effectLevelContainerElement.classList.remove('hidden');
-  }
-
-  if (effectLevelValueElement) {
-    effectLevelValueElement.value = '';
+  if (pristine && !pristine.validate()) {
+    evt.preventDefault();
   }
 };
 
@@ -234,15 +185,8 @@ const initUploadForm = () => {
   fileInputElement.addEventListener('change', onFileInputChange);
   cancelButtonElement.addEventListener('click', onCancelButtonClick);
   uploadFormElement.addEventListener('submit', onFormSubmit);
-  uploadFormElement.addEventListener('reset', onFormReset);
-  document.addEventListener('keydown', onDocumentKeydown);
-
   hashtagsInputElement.addEventListener('keydown', onTextFieldKeydown);
   descriptionInputElement.addEventListener('keydown', onTextFieldKeydown);
-
-  effectRadiosElements.forEach((radioElement) => {
-    radioElement.addEventListener('change', onEffectRadioChange);
-  });
 };
 
 export { initUploadForm };
