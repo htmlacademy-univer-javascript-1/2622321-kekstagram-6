@@ -9,6 +9,10 @@ const photoDescriptionElement = bigPictureElement.querySelector('.social__captio
 const commentCountBlockElement = bigPictureElement.querySelector('.social__comment-count');
 const loadMoreButtonElement = bigPictureElement.querySelector('.comments-loader');
 
+const COMMENTS_PER_PORTION = 5;
+let currentComments = [];
+let commentsShown = 0;
+
 const createCommentElement = ({ avatar, name, message }) => {
   const commentElement = document.createElement('li');
   commentElement.className = 'social__comment';
@@ -28,20 +32,36 @@ const createCommentElement = ({ avatar, name, message }) => {
   return commentElement;
 };
 
-const renderComments = (comments) => {
-  commentsListElement.innerHTML = '';
+const showMoreComments = () => {
+  const nextCommentsPortion = currentComments.slice(
+    commentsShown,
+    commentsShown + COMMENTS_PER_PORTION
+  );
 
-  const fragment = document.createDocumentFragment();
-
-  comments.forEach((comment) => {
+  // Создаём и добавляем комментарии
+  nextCommentsPortion.forEach((comment) => {
     const commentElement = createCommentElement(comment);
-    fragment.appendChild(commentElement);
+    commentsListElement.appendChild(commentElement);
   });
 
-  commentsListElement.appendChild(fragment);
+  commentsShown += nextCommentsPortion.length;
 
-  commentCountBlockElement.classList.add('hidden');
-  loadMoreButtonElement.classList.add('hidden');
+  commentCountBlockElement.innerHTML = `${commentsShown} из <span class="comments-count">${currentComments.length}</span> комментариев`;
+
+  if (commentsShown >= currentComments.length) {
+    loadMoreButtonElement.classList.add('hidden');
+  }
+};
+
+const renderComments = (comments) => {
+  commentsListElement.innerHTML = '';
+  currentComments = comments;
+  commentsShown = 0;
+
+  commentCountBlockElement.classList.remove('hidden');
+  loadMoreButtonElement.classList.remove('hidden');
+
+  showMoreComments();
 };
 
 const openFullPhoto = (photo) => {
@@ -63,6 +83,7 @@ const closeFullPhoto = () => {
 };
 
 closeButtonElement.addEventListener('click', closeFullPhoto);
+loadMoreButtonElement.addEventListener('click', showMoreComments);
 
 document.addEventListener('keydown', (evt) => {
   if (evt.key === 'Escape' && !bigPictureElement.classList.contains('hidden')) {
