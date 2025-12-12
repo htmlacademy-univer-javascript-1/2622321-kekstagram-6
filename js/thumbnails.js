@@ -27,6 +27,5 @@ export const renderThumbnails = (photos, picturesContainer) => {
     fragment.appendChild(thumbnail);
   });
 
-  picturesContainer.innerHTML = '';
   picturesContainer.appendChild(fragment);
 };
