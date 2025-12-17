@@ -103,6 +103,7 @@ const updateSlider = (effect) => {
 
   if (effect === 'none') {
     effectLevelContainerElement.classList.add('hidden');
+    applyEffect(effect, 0);
     return;
   }
 
@@ -171,6 +172,11 @@ const resetScaleAndEffects = () => {
   }
 
   updateSlider(EFFECT_DEFAULT);
+
+  if (effectLevelSliderElement.noUiSlider) {
+    const settings = EFFECT_SETTINGS[EFFECT_DEFAULT];
+    effectLevelSliderElement.noUiSlider.set(settings.max);
+  }
 };
 
 const initScaleAndEffects = () => {

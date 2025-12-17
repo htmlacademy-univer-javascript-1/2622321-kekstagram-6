@@ -1,5 +1,7 @@
 import { isEscapeKey } from './utils.js';
 import { resetScaleAndEffects } from './scale-and-effects.js';
+import { sendData } from './api.js';
+import { showMessage } from './messages.js';
 
 const uploadFormElement = document.querySelector('.img-upload__form');
 const fileInputElement = uploadFormElement.querySelector('.img-upload__input');
@@ -9,6 +11,9 @@ const hashtagsInputElement = uploadFormElement.querySelector('.text__hashtags');
 const descriptionInputElement = uploadFormElement.querySelector('.text__description');
 const previewImageElement = uploadFormElement.querySelector('.img-upload__preview img');
 const effectsPreviewElements = document.querySelectorAll('.effects__preview');
+const submitButtonElement = uploadFormElement.querySelector('.img-upload__submit');
+const uploadStartElement = document.querySelector('.img-upload__start');
+const uploadFileInputElement = uploadStartElement ? uploadStartElement.querySelector('input[type=file]') : null;
 
 const MAX_COMMENT_LENGTH = 140;
 const MAX_HASHTAGS = 5;
@@ -124,12 +129,26 @@ const onDocumentKeydown = (evt) => {
   }
 };
 
+const blockSubmitButton = () => {
+  submitButtonElement.disabled = true;
+  submitButtonElement.textContent = 'Публикую...';
+};
+
+const unblockSubmitButton = () => {
+  submitButtonElement.disabled = false;
+  submitButtonElement.textContent = 'Опубликовать';
+};
+
 const closeUploadForm = () => {
   overlayElement.classList.add('hidden');
   document.body.classList.remove('modal-open');
 
   uploadFormElement.reset();
   fileInputElement.value = '';
+
+  if (uploadFileInputElement) {
+    uploadFileInputElement.value = '';
+  }
 
   previewImageElement.src = 'img/upload-default-image.jpg';
   effectsPreviewElements.forEach((preview) => {
@@ -175,9 +194,27 @@ const onCancelButtonClick = () => {
   closeUploadForm();
 };
 
-const onFormSubmit = (evt) => {
-  if (pristine && !pristine.validate()) {
-    evt.preventDefault();
+const onFormSubmit = async (evt) => {
+  evt.preventDefault();
+
+  if (!pristine.validate()) {
+    return;
+  }
+
+  blockSubmitButton();
+
+  try {
+    const formData = new FormData(evt.target);
+    await sendData(formData);
+
+
+    closeUploadForm();
+    showMessage('success');
+  } catch (error){
+
+    showMessage('error');
+  } finally {
+    unblockSubmitButton();
   }
 };
 
