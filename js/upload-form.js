@@ -106,7 +106,6 @@ const setPreviewImage = (file) => {
 
   reader.onload = (evt) => {
     const imageUrl = evt.target.result;
-
     previewImageElement.src = imageUrl;
 
     effectsPreviewElements.forEach((preview) => {
@@ -117,17 +116,17 @@ const setPreviewImage = (file) => {
   reader.readAsDataURL(file);
 };
 
-const onDocumentKeydown = (evt) => {
+function onDocumentKeydown(evt) {
   if (isEscapeKey(evt)) {
     const isFocused = document.activeElement === hashtagsInputElement ||
-                      document.activeElement === descriptionInputElement;
+      document.activeElement === descriptionInputElement;
 
     if (!isFocused) {
       evt.preventDefault();
       closeUploadForm();
     }
   }
-};
+}
 
 const blockSubmitButton = () => {
   submitButtonElement.disabled = true;
@@ -139,10 +138,9 @@ const unblockSubmitButton = () => {
   submitButtonElement.textContent = 'Опубликовать';
 };
 
-const closeUploadForm = () => {
+function closeUploadForm() {
   overlayElement.classList.add('hidden');
   document.body.classList.remove('modal-open');
-
   uploadFormElement.reset();
   fileInputElement.value = '';
 
@@ -151,6 +149,7 @@ const closeUploadForm = () => {
   }
 
   previewImageElement.src = 'img/upload-default-image.jpg';
+
   effectsPreviewElements.forEach((preview) => {
     preview.style.backgroundImage = '';
   });
@@ -162,7 +161,7 @@ const closeUploadForm = () => {
   }
 
   document.removeEventListener('keydown', onDocumentKeydown);
-};
+}
 
 const openUploadForm = (file) => {
   if (file) {
@@ -173,7 +172,6 @@ const openUploadForm = (file) => {
   document.body.classList.add('modal-open');
   document.addEventListener('keydown', onDocumentKeydown);
   initValidation();
-
   hashtagsInputElement.focus();
 };
 
@@ -206,12 +204,9 @@ const onFormSubmit = async (evt) => {
   try {
     const formData = new FormData(evt.target);
     await sendData(formData);
-
-
     closeUploadForm();
     showMessage('success');
-  } catch (error){
-
+  } catch (error) {
     showMessage('error');
   } finally {
     unblockSubmitButton();

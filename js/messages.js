@@ -4,7 +4,6 @@ const showMessage = (type, text = '') => {
   const templateElement = document.querySelector(`#${type}`).content.querySelector(`.${type}`);
   const messageElement = templateElement.cloneNode(true);
 
-  // Добавляем высокий z-index чтобы сообщение было поверх формы
   messageElement.style.zIndex = '1000';
 
   if (text && messageElement.querySelector(`.${type}__title`)) {
@@ -13,25 +12,25 @@ const showMessage = (type, text = '') => {
 
   const buttonElement = messageElement.querySelector(`.${type}__button`);
 
-  const hideMessage = () => {
+  function hideMessage() {
     messageElement.remove();
     document.removeEventListener('keydown', onDocumentKeydown);
     document.removeEventListener('click', onDocumentClick);
-  };
+  }
 
-  const onDocumentClick = (evt) => {
+  function onDocumentClick(evt) {
     if (evt.target.closest(`.${type}__inner`)) {
       return;
     }
     hideMessage();
-  };
+  }
 
-  const onDocumentKeydown = (evt) => {
+  function onDocumentKeydown(evt) {
     if (isEscapeKey(evt)) {
       evt.preventDefault();
       hideMessage();
     }
-  };
+  }
 
   if (buttonElement) {
     buttonElement.addEventListener('click', hideMessage);
@@ -39,7 +38,6 @@ const showMessage = (type, text = '') => {
 
   document.addEventListener('keydown', onDocumentKeydown);
   document.addEventListener('click', onDocumentClick);
-
   document.body.append(messageElement);
 
   if (buttonElement && type === 'error') {

@@ -1,4 +1,3 @@
-
 const bigPictureElement = document.querySelector('.big-picture');
 const closeButtonElement = bigPictureElement.querySelector('#picture-cancel');
 const bigImageElement = bigPictureElement.querySelector('.big-picture__img img');
@@ -10,6 +9,7 @@ const commentCountBlockElement = bigPictureElement.querySelector('.social__comme
 const loadMoreButtonElement = bigPictureElement.querySelector('.comments-loader');
 
 const COMMENTS_PER_PORTION = 5;
+
 let currentComments = [];
 let commentsShown = 0;
 
@@ -38,15 +38,13 @@ const showMoreComments = () => {
     commentsShown + COMMENTS_PER_PORTION
   );
 
-  // Создаём и добавляем комментарии
   nextCommentsPortion.forEach((comment) => {
     const commentElement = createCommentElement(comment);
     commentsListElement.appendChild(commentElement);
   });
 
   commentsShown += nextCommentsPortion.length;
-
-  commentCountBlockElement.innerHTML = `${commentsShown} из <span class="comments-count">${currentComments.length}</span> комментариев`;
+  commentCountBlockElement.textContent = `${commentsShown} из ${currentComments.length} комментариев`;
 
   if (commentsShown >= currentComments.length) {
     loadMoreButtonElement.classList.add('hidden');
@@ -64,6 +62,12 @@ const renderComments = (comments) => {
   showMoreComments();
 };
 
+function onDocumentKeydown(evt) {
+  if (evt.key === 'Escape' || evt.key === 'Esc') {
+    closeFullPhoto();
+  }
+}
+
 const openFullPhoto = (photo) => {
   bigImageElement.src = photo.url;
   bigImageElement.alt = photo.description;
@@ -75,20 +79,16 @@ const openFullPhoto = (photo) => {
 
   bigPictureElement.classList.remove('hidden');
   document.body.classList.add('modal-open');
+  document.addEventListener('keydown', onDocumentKeydown);
 };
 
-const closeFullPhoto = () => {
+function closeFullPhoto() {
   bigPictureElement.classList.add('hidden');
   document.body.classList.remove('modal-open');
-};
+  document.removeEventListener('keydown', onDocumentKeydown);
+}
 
 closeButtonElement.addEventListener('click', closeFullPhoto);
 loadMoreButtonElement.addEventListener('click', showMoreComments);
-
-document.addEventListener('keydown', (evt) => {
-  if (evt.key === 'Escape' && !bigPictureElement.classList.contains('hidden')) {
-    closeFullPhoto();
-  }
-});
 
 export { openFullPhoto };

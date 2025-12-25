@@ -4,6 +4,10 @@ const DEBOUNCE_DELAY = 500;
 const filtersContainerElement = document.querySelector('.img-filters');
 const filtersFormElement = filtersContainerElement.querySelector('.img-filters__form');
 
+let currentPhotos = [];
+let activeButtonElement = null;
+let debouncedRender = null;
+
 const showFilters = () => {
   filtersContainerElement.classList.remove('img-filters--inactive');
 };
@@ -35,35 +39,35 @@ const debounce = (callback, timeoutDelay = DEBOUNCE_DELAY) => {
   };
 };
 
-let currentPhotos = [];
+const onFilterButtonClick = (evt) => {
+  const target = evt.target;
 
-const onFilterChange = (callback) => {
-  filtersFormElement.addEventListener('click', (evt) => {
-    const target = evt.target;
+  if (!target.matches('.img-filters__button') || target === activeButtonElement) {
+    return;
+  }
 
-    if (!target.matches('.img-filters__button')) {
-      return;
-    }
-
-    const activeButtonElement = filtersFormElement.querySelector('.img-filters__button--active');
+  if (activeButtonElement) {
     activeButtonElement.classList.remove('img-filters__button--active');
-    target.classList.add('img-filters__button--active');
+  }
 
-    const filterId = target.id;
+  target.classList.add('img-filters__button--active');
+  activeButtonElement = target;
 
-    const debouncedCallback = debounce(() => {
-      const filteredPhotos = applyFilter(currentPhotos, filterId);
-      callback(filteredPhotos);
-    });
-
-    debouncedCallback();
-  });
+  const filterId = target.id;
+  debouncedRender(filterId);
 };
 
 const initFilters = (photos, callback) => {
   currentPhotos = photos;
+  activeButtonElement = filtersFormElement.querySelector('.img-filters__button--active');
+
+  debouncedRender = debounce((filterId) => {
+    const filteredPhotos = applyFilter(currentPhotos, filterId);
+    callback(filteredPhotos);
+  });
+
   showFilters();
-  onFilterChange(callback);
+  filtersFormElement.addEventListener('click', onFilterButtonClick);
 };
 
 export { initFilters };
