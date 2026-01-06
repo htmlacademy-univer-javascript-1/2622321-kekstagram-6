@@ -38,7 +38,7 @@ const showMessage = (type, text = '') => {
 
   document.addEventListener('keydown', onDocumentKeydown);
   document.addEventListener('click', onDocumentClick);
-  document.body.append(messageElement);
+  document.body.insertAdjacentElement('beforeend', messageElement);
 
   if (buttonElement && type === 'error') {
     buttonElement.focus();

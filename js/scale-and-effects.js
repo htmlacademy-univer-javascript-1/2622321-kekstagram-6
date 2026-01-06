@@ -62,6 +62,7 @@ const EFFECT_SETTINGS = {
 const setScale = (value) => {
   const clampedValue = Math.max(SCALE_MIN, Math.min(SCALE_MAX, value));
   scaleValueElement.value = `${clampedValue}%`;
+  scaleValueElement.setAttribute('value', `${clampedValue}%`);
   previewImageElement.style.transform = `scale(${clampedValue / 100})`;
 };
 

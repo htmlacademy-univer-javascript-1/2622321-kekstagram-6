@@ -1,6 +1,6 @@
 import { isEscapeKey } from './utils.js';
 import { resetScaleAndEffects } from './scale-and-effects.js';
-import { sendData } from './api.js';
+import { sendData, ErrorText } from './api.js';
 import { showMessage } from './messages.js';
 
 const uploadFormElement = document.querySelector('.img-upload__form');
@@ -207,7 +207,7 @@ const onFormSubmit = async (evt) => {
     closeUploadForm();
     showMessage('success');
   } catch (error) {
-    showMessage('error');
+    showMessage('error', ErrorText.SEND_DATA);
   } finally {
     unblockSubmitButton();
   }
